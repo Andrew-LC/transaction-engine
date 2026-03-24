@@ -1,0 +1,45 @@
+# Binaries and build artifacts
+/tmp/
+tmp/
+bin/
+build/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+*.o
+*.a
+
+.gitignore
+
+# Go modules and vendor
+vendor/
+*.modcache
+
+# Docker
+docker-compose.override.yml
+*.env
+
+# IDE / editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*.DS_Store
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+/tmp/*
+tmp/*
+
+testing/
+docker-compose.yaml
