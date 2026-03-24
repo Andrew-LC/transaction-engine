@@ -7,6 +7,7 @@ import (
 
     "github.com/google/uuid"
     "transaction-engine/models"
+    "transaction-engine/domain"
 )
 
 var (
@@ -45,7 +46,7 @@ func (s *InMemoryStore) seed() {
         CardHolder: "John Doe",
         PinHash:    "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4", 
         Balance:    1000,
-        Status:     models.CardStatusActive,
+        Status:     domain.CardStatusActive,
     }
 }
 
