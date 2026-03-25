@@ -247,13 +247,35 @@
             },
             "url": { "raw": "{{base_url}}/api/transaction", "host": ["{{base_url}}"], "path": ["api", "transaction"] }
           }
+        }
+      ]
+    },
+    {
+      "name": "3b. Withdraw - Exact Balance (isolated)",
+      "item": [
+        {
+          "name": "Step 1 — Create Card (Exact Balance)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"card_number\": 5000000000000099,\n  \"card_holder\": \"Edge Case\",\n  \"pin\": \"1111\",\n  \"amount\": 1000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/card/newcard",
+              "host": ["{{base_url}}"],
+              "path": ["api", "card", "newcard"]
+            }
+          }
         },
         {
-          "name": "Withdraw - Exact Balance (edge case)",
+          "name": "Step 2 — Withdraw Exact Balance",
           "event": [
             {
               "listen": "test",
               "script": {
+                "type": "text/javascript",
                 "exec": [
                   "pm.test('resp_code is 00', function () {",
                   "    pm.expect(pm.response.json().resp_code).to.eql('00');",
@@ -261,8 +283,7 @@
                   "pm.test('balance is 0', function () {",
                   "    pm.expect(pm.response.json().balance).to.eql(0);",
                   "});"
-                ],
-                "type": "text/javascript"
+                ]
               }
             }
           ],
@@ -271,9 +292,13 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"card_number\": 4123456789012345,\n  \"pin\": \"1234\",\n  \"type\": \"withdraw\",\n  \"amount\": 1000\n}"
+              "raw": "{\n  \"card_number\": 5000000000000099,\n  \"pin\": \"1111\",\n  \"type\": \"withdraw\",\n  \"amount\": 1000\n}"
             },
-            "url": { "raw": "{{base_url}}/api/transaction", "host": ["{{base_url}}"], "path": ["api", "transaction"] }
+            "url": {
+              "raw": "{{base_url}}/api/transaction",
+              "host": ["{{base_url}}"],
+              "path": ["api", "transaction"]
+            }
           }
         }
       ]
@@ -294,8 +319,8 @@
                   "pm.test('resp_code is 00', function () {",
                   "    pm.expect(pm.response.json().resp_code).to.eql('00');",
                   "});",
-                  "pm.test('balance is 1500', function () {",
-                  "    pm.expect(pm.response.json().balance).to.eql(1500);",
+                  "pm.test('balance is 1300', function () {",
+                  "    pm.expect(pm.response.json().balance).to.eql(1300);",
                   "});"
                 ],
                 "type": "text/javascript"

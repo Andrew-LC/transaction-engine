@@ -1,34 +1,14 @@
 #!/bin/bash
 
 BASE_URL="http://localhost:8080"
-
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
-BOLD='\033[1m'
-RESET='\033[0m'
-
 PASS=0
 FAIL=0
-
-print_header() {
-    echo ""
-    echo -e "${CYAN}${BOLD}══════════════════════════════════════════${RESET}"
-    echo -e "${CYAN}${BOLD}  $1${RESET}"
-    echo -e "${CYAN}${BOLD}══════════════════════════════════════════${RESET}"
-}
-
-print_test() {
-    echo ""
-    echo -e "${YELLOW}▶ $1${RESET}"
-}
+RESULTS=()
 
 run_curl() {
     local method=$1
     local path=$2
     local data=$3
-
     if [ -n "$data" ]; then
         curl -s -X "$method" "$BASE_URL$path" \
             -H "Content-Type: application/json" \
@@ -39,165 +19,134 @@ run_curl() {
 }
 
 check() {
-    local label=$1
-    local response=$2
-    local expected_field=$3
-    local expected_value=$4
+    local section=$1
+    local label=$2
+    local response=$3
+    local expected_field=$4
+    local expected_value=$5
 
     actual=$(echo "$response" | grep -o "\"$expected_field\":\"[^\"]*\"" | cut -d'"' -f4)
 
     if [ "$actual" = "$expected_value" ]; then
-        echo -e "  ${GREEN}✔ PASS${RESET} — $label"
-        echo -e "  Response: $response"
+        RESULTS+=("$(printf '%-30s | %-38s | %-6s | PASS' "$section" "$label" "$expected_value")")
         PASS=$((PASS + 1))
     else
-        echo -e "  ${RED}✘ FAIL${RESET} — $label"
-        echo -e "  Expected $expected_field=${BOLD}$expected_value${RESET}, got ${RED}$actual${RESET}"
-        echo -e "  Response: $response"
+        RESULTS+=("$(printf '%-30s | %-38s | %-6s | FAIL  (got: %s)' "$section" "$label" "$expected_value" "$actual")")
         FAIL=$((FAIL + 1))
     fi
 }
 
-# ─────────────────────────────────────────────
-print_header "1. CREATE CARD"
-# ─────────────────────────────────────────────
+divider() {
+    printf '%s\n' "------------------------------+----------------------------------------+--------+----------------------"
+}
 
-print_test "Create a new card (Jane Smith)"
+# 1. Create Card
 RESP=$(run_curl POST /api/card/newcard '{
   "card_number": 5000000000000001,
-  "card_holder": "Jane Smith",
+  "card_holder": "Mikasa Ackerman",
   "pin": "5678",
   "amount": 500
 }')
-check "New card created" "$RESP" "resp_code" "00"
+check "1. Create Card" "New card created" "$RESP" "resp_code" "00"
 
-print_test "Duplicate card (should fail)"
 RESP=$(run_curl POST /api/card/newcard '{
   "card_number": 4123456789012345,
   "card_holder": "Duplicate",
   "pin": "0000",
   "amount": 0
 }')
-check "Duplicate card rejected" "$RESP" "status" "FAILED"
+check "1. Create Card" "Duplicate card rejected" "$RESP" "status" "FAILED"
 
-# ─────────────────────────────────────────────
-print_header "2. GET BALANCE"
-# ─────────────────────────────────────────────
-
-print_test "Balance for seeded card (John Doe)"
+# 2. Get Balance
 RESP=$(run_curl GET /api/card/balance/4123456789012345)
-check "Balance returns respCode 00" "$RESP" "resp_code" "00"
+check "2. Get Balance" "Seeded card balance" "$RESP" "resp_code" "00"
 
-print_test "Balance for non-existent card"
 RESP=$(run_curl GET /api/card/balance/9999999999999999)
-check "Invalid card returns respCode 05" "$RESP" "resp_code" "05"
+check "2. Get Balance" "Non-existent card" "$RESP" "resp_code" "05"
 
-# ─────────────────────────────────────────────
-print_header "3. WITHDRAW"
-# ─────────────────────────────────────────────
-
-print_test "Successful withdraw (200 from 1000)"
+# 3. Withdraw
 RESP=$(run_curl POST /api/transaction '{
   "card_number": 4123456789012345,
   "pin": "1234",
   "type": "withdraw",
   "amount": 200
 }')
-check "Withdraw succeeds with respCode 00" "$RESP" "resp_code" "00"
+check "3. Withdraw" "Success (200 from 1000)" "$RESP" "resp_code" "00"
 
-print_test "Insufficient balance withdraw"
 RESP=$(run_curl POST /api/transaction '{
   "card_number": 4123456789012345,
   "pin": "1234",
   "type": "withdraw",
   "amount": 99999
 }')
-check "Insufficient balance returns respCode 99" "$RESP" "resp_code" "99"
+check "3. Withdraw" "Insufficient balance" "$RESP" "resp_code" "99"
 
-print_test "Withdraw with wrong PIN"
 RESP=$(run_curl POST /api/transaction '{
   "card_number": 4123456789012345,
   "pin": "0000",
   "type": "withdraw",
   "amount": 100
 }')
-check "Wrong PIN returns respCode 06" "$RESP" "resp_code" "06"
+check "3. Withdraw" "Wrong PIN" "$RESP" "resp_code" "06"
 
-print_test "Withdraw from non-existent card"
 RESP=$(run_curl POST /api/transaction '{
   "card_number": 9999999999999999,
   "pin": "1234",
   "type": "withdraw",
   "amount": 100
 }')
-check "Invalid card returns respCode 05" "$RESP" "resp_code" "05"
+check "3. Withdraw" "Non-existent card" "$RESP" "resp_code" "05"
 
-# ─────────────────────────────────────────────
-print_header "4. TOPUP"
-# ─────────────────────────────────────────────
-
-print_test "Successful topup (500)"
+# 4. Topup
 RESP=$(run_curl POST /api/transaction '{
   "card_number": 4123456789012345,
   "pin": "1234",
   "type": "topup",
   "amount": 500
 }')
-check "Topup succeeds with respCode 00" "$RESP" "resp_code" "00"
+check "4. Topup" "Success (500)" "$RESP" "resp_code" "00"
 
-print_test "Topup with wrong PIN"
 RESP=$(run_curl POST /api/transaction '{
   "card_number": 4123456789012345,
   "pin": "9999",
   "type": "topup",
   "amount": 100
 }')
-check "Wrong PIN on topup returns respCode 06" "$RESP" "resp_code" "06"
+check "4. Topup" "Wrong PIN" "$RESP" "resp_code" "06"
 
-# ─────────────────────────────────────────────
-print_header "5. INVALID TRANSACTION TYPE"
-# ─────────────────────────────────────────────
+RESP=$(run_curl POST /api/transaction '{
+  "card_number": 9999999999999999,
+  "pin": "1234",
+  "type": "topup",
+  "amount": 100
+}')
+check "4. Topup" "Non-existent card" "$RESP" "resp_code" "05"
 
-print_test "Unknown transaction type"
+# 5. Invalid Transaction Type
 RESP=$(run_curl POST /api/transaction '{
   "card_number": 4123456789012345,
   "pin": "1234",
   "type": "transfer",
   "amount": 100
 }')
-check "Unknown type returns FAILED" "$RESP" "status" "FAILED"
+check "5. Invalid Type" "Unknown type (transfer)" "$RESP" "status" "FAILED"
 
-# ─────────────────────────────────────────────
-print_header "6. TRANSACTION HISTORY"
-# ─────────────────────────────────────────────
-
-print_test "Transaction history for John Doe"
-RESP=$(run_curl GET /api/card/transactions/4123456789012345)
-check "History returns respCode 00" "$RESP" "resp_code" "00"
-
-print_test "Transaction history for non-existent card"
-RESP=$(run_curl GET /api/card/transactions/9999999999999999)
-check "Invalid card history returns respCode 05" "$RESP" "resp_code" "05"
-
-# ─────────────────────────────────────────────
-print_header "7. MALFORMED REQUEST"
-# ─────────────────────────────────────────────
-
-print_test "Malformed JSON body"
 RESP=$(curl -s -X POST "$BASE_URL/api/transaction" \
     -H "Content-Type: application/json" \
     -d '{not valid json')
-check "Malformed body returns FAILED" "$RESP" "status" "FAILED"
+check "5. Invalid Type" "Malformed JSON body" "$RESP" "status" "FAILED"
 
-# ─────────────────────────────────────────────
-print_header "8. END-TO-END FLOW"
-# ─────────────────────────────────────────────
+# 6. Transaction History
+RESP=$(run_curl GET /api/card/transactions/4123456789012345)
+check "6. Tx History" "Seeded card history" "$RESP" "resp_code" "00"
 
-print_test "Create new card, topup, then withdraw"
+RESP=$(run_curl GET /api/card/transactions/9999999999999999)
+check "6. Tx History" "Non-existent card" "$RESP" "resp_code" "05"
 
+# 7. End-to-End Flow
 run_curl POST /api/card/newcard '{
   "card_number": 5000000000000002,
-  "card_holder": "Alice",
+  "card_holder": "Rem",
   "pin": "4321",
   "amount": 300
 }' > /dev/null
@@ -215,13 +164,21 @@ RESP=$(run_curl POST /api/transaction '{
   "type": "withdraw",
   "amount": 100
 }')
-check "E2E withdraw after topup succeeds" "$RESP" "resp_code" "00"
+check "7. End-to-End" "Create -> topup -> withdraw" "$RESP" "resp_code" "00"
 
-# ─────────────────────────────────────────────
+
 echo ""
-echo -e "${CYAN}${BOLD}══════════════════════════════════════════${RESET}"
-echo -e "${BOLD}  RESULTS: ${GREEN}$PASS passed${RESET} / ${RED}$FAIL failed${RESET}"
-echo -e "${CYAN}${BOLD}══════════════════════════════════════════${RESET}"
+echo "Transaction Engine — Test Results"
+echo "Run at: $(date '+%Y-%m-%d %H:%M:%S')"
+echo ""
+printf '%-30s | %-38s | %-6s | %s\n' "Section" "Test" "Expect" "Result"
+divider
+for row in "${RESULTS[@]}"; do
+    echo "$row"
+done
+divider
+echo ""
+printf 'Total: %d tests    Passed: %d    Failed: %d\n' "$((PASS + FAIL))" "$PASS" "$FAIL"
 echo ""
 
 if [ $FAIL -ne 0 ]; then

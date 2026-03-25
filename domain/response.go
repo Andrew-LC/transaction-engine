@@ -4,7 +4,7 @@ type Response struct {
 	Status       string `json:"status,omitempty"`
 	RespCode     string `json:"resp_code,omitempty"`
 	Message      string `json:"message,omitempty"`
-	Balance      int64  `json:"balance,omitempty"`
+	Balance      int64  `json:"balance"`
 	Transactions any    `json:"transactions,omitempty"`
 }
 
