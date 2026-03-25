@@ -1,13 +1,12 @@
 package service
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 
 	"transaction-engine/domain"
 	"transaction-engine/models"
 	"transaction-engine/store"
+	"transaction-engine/utils"
 )
 
 var (
@@ -63,9 +62,8 @@ func (s *Service) ProcessTransaction(req domain.TransactionRequest) (int64, erro
 		return 0, err
 	}
 
-	hash := sha256.New()
-	hash.Write([]byte(req.Pin))
-	if card.PinHash != hex.EncodeToString(hash.Sum(nil)) {
+	hash := utils.Hash(req.Pin)
+	if card.PinHash != hash {
 		return 0, ErrInvalidPin
 	}
 

@@ -2,10 +2,9 @@ package models
 
 import (
 	"time"
-	"encoding/hex"
-	"crypto/sha256"
 	"github.com/google/uuid"
 	"transaction-engine/domain"
+	"transaction-engine/utils"
 )
 
 type Card struct {
@@ -26,13 +25,6 @@ type Transaction struct {
 }
 
 
-func hash(pin string) string {
-	hasher := sha256.New()
-	hasher.Write([]byte(pin))
-
-	return hex.EncodeToString(hasher.Sum(nil)) 
-}
-
 func NewCard(
 	cardNumber int64,
 	cardHolder string,
@@ -42,7 +34,7 @@ func NewCard(
 	return Card{
 		CardNumber: cardNumber,
 		CardHolder: cardHolder,
-		PinHash:    hash(pin),
+		PinHash:    utils.Hash(pin),
 		Status:     domain.CardStatusActive,
 		Balance:    amount,      
 	}
