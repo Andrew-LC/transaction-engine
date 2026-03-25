@@ -11,3 +11,10 @@ type BalanceRequest struct {
 	CardNumber  int64    `json:"card_number"`
 	Pin         string    `json:"pin"`
 }
+
+type NewCardRequest struct {
+	CardNumber int64   `json:"card_number"`
+	CardHolder string  `json:"card_holder"`
+	Pin        string  `json:"pin"`
+	Amount     int64   `json:"amount"`
+}

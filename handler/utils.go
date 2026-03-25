@@ -35,13 +35,17 @@ func writeError(w http.ResponseWriter, err error) {
 		writeJSON(w, http.StatusNotFound, domain.NewResponse(
 			"FAILED", "05", "invalid card", 0,
 		))
+	case errors.Is(err, store.ErrCardExists):
+		writeJSON(w, http.StatusNotFound, domain.NewResponse(
+			"FAILED", "05", "card already exists", 0,
+		))
 	case errors.Is(err, service.ErrInvalidPin):
 		writeJSON(w, http.StatusUnauthorized, domain.NewResponse(
 			"FAILED", "06", "invalid pin", 0,
 		))
 	case errors.Is(err, service.ErrInsufficientFunds):
 		writeJSON(w, http.StatusBadRequest, domain.NewResponse(
-			"FAILED", "51", "insufficient funds", 0,
+			"FAILED", "99", "insufficient funds", 0,
 		))
 	case errors.Is(err, service.ErrInvalidTransactionType):
 		writeJSON(w, http.StatusBadRequest, domain.NewResponse(

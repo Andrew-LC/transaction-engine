@@ -12,6 +12,7 @@ import (
 
 var (
 	ErrInvalidPin             = errors.New("invalid pin")
+	ErrCardExists             = errors.New("card already exists")
 	ErrInsufficientFunds      = errors.New("insufficient funds")
 	ErrInvalidTransactionType = errors.New("invalid transaction type")
 )
@@ -22,6 +23,22 @@ type Service struct {
 
 func NewService(store store.Store) *Service {
 	return &Service{store: store}
+}
+
+func (s *Service) CreateCard(cardRequest domain.NewCardRequest) (models.Card, error) {
+	newCard := models.NewCard(
+		cardRequest.CardNumber,
+		cardRequest.CardHolder,
+		cardRequest.Pin,
+		cardRequest.Amount,
+	)
+
+	err := s.store.CreateCard(&newCard)
+	if err != nil {
+		return models.Card{}, err
+	}
+
+	return newCard, nil
 }
 
 func (s *Service) GetBalance(cardNumber int64) (int64, error) {
