@@ -68,7 +68,7 @@ A seeded card is available immediately on startup:
 | Field       | Value                |
 |-------------|----------------------|
 | Card Number | `4123456789012345`   |
-| Card Holder | John Doe             |
+| Card Holder | Andrew LC            |
 | PIN         | `1234`               |
 | Balance     | `1000`               |
 | Status      | `ACTIVE`             |
