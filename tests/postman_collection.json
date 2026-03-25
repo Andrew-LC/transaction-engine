@@ -1,0 +1,616 @@
+{
+  "info": {
+    "name": "Transaction Engine API",
+    "_postman_id": "transaction-engine-collection",
+    "description": "API tests for the Transaction Processing Engine assessment. Start the server with `go run ./cmd/...` before running.\n\nSeeded card: 4123456789012345 | PIN: 1234 | Balance: 1000",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Create Card",
+      "item": [
+        {
+          "name": "Create New Card (Jane Smith)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('resp_code is 00', function () {",
+                  "    pm.expect(pm.response.json().resp_code).to.eql('00');",
+                  "});",
+                  "pm.test('status is SUCCESS', function () {",
+                  "    pm.expect(pm.response.json().status).to.eql('SUCCESS');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"card_number\": 5000000000000001,\n  \"card_holder\": \"Jane Smith\",\n  \"pin\": \"5678\",\n  \"amount\": 500\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/card/newcard", "host": ["{{base_url}}"], "path": ["api", "card", "newcard"] }
+          }
+        },
+        {
+          "name": "Create Duplicate Card (should fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status is FAILED', function () {",
+                  "    pm.expect(pm.response.json().status).to.eql('FAILED');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"card_number\": 4123456789012345,\n  \"card_holder\": \"Duplicate\",\n  \"pin\": \"0000\",\n  \"amount\": 0\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/card/newcard", "host": ["{{base_url}}"], "path": ["api", "card", "newcard"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Get Balance",
+      "item": [
+        {
+          "name": "Get Balance - Andrew LC (seeded)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('resp_code is 00', function () {",
+                  "    pm.expect(pm.response.json().resp_code).to.eql('00');",
+                  "});",
+                  "pm.test('balance is 1000', function () {",
+                  "    pm.expect(pm.response.json().balance).to.eql(1000);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/card/balance/4123456789012345", "host": ["{{base_url}}"], "path": ["api", "card", "balance", "4123456789012345"] }
+          }
+        },
+        {
+          "name": "Get Balance - Non-existent Card",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('resp_code is 05', function () {",
+                  "    pm.expect(pm.response.json().resp_code).to.eql('05');",
+                  "});",
+                  "pm.test('status is FAILED', function () {",
+                  "    pm.expect(pm.response.json().status).to.eql('FAILED');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/card/balance/9999999999999999", "host": ["{{base_url}}"], "path": ["api", "card", "balance", "9999999999999999"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Withdraw",
+      "item": [
+        {
+          "name": "Withdraw - Success (200 from 1000)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('resp_code is 00', function () {",
+                  "    pm.expect(pm.response.json().resp_code).to.eql('00');",
+                  "});",
+                  "pm.test('balance is 800', function () {",
+                  "    pm.expect(pm.response.json().balance).to.eql(800);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"card_number\": 4123456789012345,\n  \"pin\": \"1234\",\n  \"type\": \"withdraw\",\n  \"amount\": 200\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/transaction", "host": ["{{base_url}}"], "path": ["api", "transaction"] }
+          }
+        },
+        {
+          "name": "Withdraw - Insufficient Balance",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('resp_code is 99', function () {",
+                  "    pm.expect(pm.response.json().resp_code).to.eql('99');",
+                  "});",
+                  "pm.test('status is FAILED', function () {",
+                  "    pm.expect(pm.response.json().status).to.eql('FAILED');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"card_number\": 4123456789012345,\n  \"pin\": \"1234\",\n  \"type\": \"withdraw\",\n  \"amount\": 99999\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/transaction", "host": ["{{base_url}}"], "path": ["api", "transaction"] }
+          }
+        },
+        {
+          "name": "Withdraw - Invalid PIN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('resp_code is 06', function () {",
+                  "    pm.expect(pm.response.json().resp_code).to.eql('06');",
+                  "});",
+                  "pm.test('status is FAILED', function () {",
+                  "    pm.expect(pm.response.json().status).to.eql('FAILED');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"card_number\": 4123456789012345,\n  \"pin\": \"0000\",\n  \"type\": \"withdraw\",\n  \"amount\": 100\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/transaction", "host": ["{{base_url}}"], "path": ["api", "transaction"] }
+          }
+        },
+        {
+          "name": "Withdraw - Invalid Card",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('resp_code is 05', function () {",
+                  "    pm.expect(pm.response.json().resp_code).to.eql('05');",
+                  "});",
+                  "pm.test('status is FAILED', function () {",
+                  "    pm.expect(pm.response.json().status).to.eql('FAILED');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"card_number\": 9999999999999999,\n  \"pin\": \"1234\",\n  \"type\": \"withdraw\",\n  \"amount\": 100\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/transaction", "host": ["{{base_url}}"], "path": ["api", "transaction"] }
+          }
+        },
+        {
+          "name": "Withdraw - Exact Balance (edge case)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('resp_code is 00', function () {",
+                  "    pm.expect(pm.response.json().resp_code).to.eql('00');",
+                  "});",
+                  "pm.test('balance is 0', function () {",
+                  "    pm.expect(pm.response.json().balance).to.eql(0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"card_number\": 4123456789012345,\n  \"pin\": \"1234\",\n  \"type\": \"withdraw\",\n  \"amount\": 1000\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/transaction", "host": ["{{base_url}}"], "path": ["api", "transaction"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Topup",
+      "item": [
+        {
+          "name": "Topup - Success (500)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('resp_code is 00', function () {",
+                  "    pm.expect(pm.response.json().resp_code).to.eql('00');",
+                  "});",
+                  "pm.test('balance is 1500', function () {",
+                  "    pm.expect(pm.response.json().balance).to.eql(1500);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"card_number\": 4123456789012345,\n  \"pin\": \"1234\",\n  \"type\": \"topup\",\n  \"amount\": 500\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/transaction", "host": ["{{base_url}}"], "path": ["api", "transaction"] }
+          }
+        },
+        {
+          "name": "Topup - Invalid PIN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('resp_code is 06', function () {",
+                  "    pm.expect(pm.response.json().resp_code).to.eql('06');",
+                  "});",
+                  "pm.test('status is FAILED', function () {",
+                  "    pm.expect(pm.response.json().status).to.eql('FAILED');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"card_number\": 4123456789012345,\n  \"pin\": \"9999\",\n  \"type\": \"topup\",\n  \"amount\": 100\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/transaction", "host": ["{{base_url}}"], "path": ["api", "transaction"] }
+          }
+        },
+        {
+          "name": "Topup - Invalid Card",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('resp_code is 05', function () {",
+                  "    pm.expect(pm.response.json().resp_code).to.eql('05');",
+                  "});",
+                  "pm.test('status is FAILED', function () {",
+                  "    pm.expect(pm.response.json().status).to.eql('FAILED');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"card_number\": 9999999999999999,\n  \"pin\": \"1234\",\n  \"type\": \"topup\",\n  \"amount\": 100\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/transaction", "host": ["{{base_url}}"], "path": ["api", "transaction"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Invalid Transaction Type",
+      "item": [
+        {
+          "name": "Unknown Type (transfer)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status is FAILED', function () {",
+                  "    pm.expect(pm.response.json().status).to.eql('FAILED');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"card_number\": 4123456789012345,\n  \"pin\": \"1234\",\n  \"type\": \"transfer\",\n  \"amount\": 100\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/transaction", "host": ["{{base_url}}"], "path": ["api", "transaction"] }
+          }
+        },
+        {
+          "name": "Malformed JSON Body",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status is FAILED', function () {",
+                  "    pm.expect(pm.response.json().status).to.eql('FAILED');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{not valid json"
+            },
+            "url": { "raw": "{{base_url}}/api/transaction", "host": ["{{base_url}}"], "path": ["api", "transaction"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Transaction History",
+      "item": [
+        {
+          "name": "Get Transactions - Andrew LC",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('resp_code is 00', function () {",
+                  "    pm.expect(pm.response.json().resp_code).to.eql('00');",
+                  "});",
+                  "pm.test('transactions field exists', function () {",
+                  "    pm.expect(pm.response.json()).to.have.property('transactions');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/card/transactions/4123456789012345", "host": ["{{base_url}}"], "path": ["api", "card", "transactions", "4123456789012345"] }
+          }
+        },
+        {
+          "name": "Get Transactions - Non-existent Card",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('resp_code is 05', function () {",
+                  "    pm.expect(pm.response.json().resp_code).to.eql('05');",
+                  "});",
+                  "pm.test('status is FAILED', function () {",
+                  "    pm.expect(pm.response.json().status).to.eql('FAILED');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/card/transactions/9999999999999999", "host": ["{{base_url}}"], "path": ["api", "card", "transactions", "9999999999999999"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. End-to-End Flow",
+      "item": [
+        {
+          "name": "Step 1 — Create Alice's Card",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Card created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"card_number\": 5000000000000002,\n  \"card_holder\": \"Alice\",\n  \"pin\": \"4321\",\n  \"amount\": 300\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/card/newcard", "host": ["{{base_url}}"], "path": ["api", "card", "newcard"] }
+          }
+        },
+        {
+          "name": "Step 2 — Topup Alice's Card",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Topup successful', function () {",
+                  "    pm.expect(pm.response.json().resp_code).to.eql('00');",
+                  "});",
+                  "pm.test('Balance is 500', function () {",
+                  "    pm.expect(pm.response.json().balance).to.eql(500);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"card_number\": 5000000000000002,\n  \"pin\": \"4321\",\n  \"type\": \"topup\",\n  \"amount\": 200\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/transaction", "host": ["{{base_url}}"], "path": ["api", "transaction"] }
+          }
+        },
+        {
+          "name": "Step 3 — Withdraw from Alice's Card",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Withdraw successful', function () {",
+                  "    pm.expect(pm.response.json().resp_code).to.eql('00');",
+                  "});",
+                  "pm.test('Balance is 400', function () {",
+                  "    pm.expect(pm.response.json().balance).to.eql(400);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"card_number\": 5000000000000002,\n  \"pin\": \"4321\",\n  \"type\": \"withdraw\",\n  \"amount\": 100\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/transaction", "host": ["{{base_url}}"], "path": ["api", "transaction"] }
+          }
+        },
+        {
+          "name": "Step 4 — Check Alice's Transaction History",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('History returns 00', function () {",
+                  "    pm.expect(pm.response.json().resp_code).to.eql('00');",
+                  "});",
+                  "pm.test('Has 2 transactions', function () {",
+                  "    pm.expect(pm.response.json().transactions.length).to.eql(2);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/card/transactions/5000000000000002", "host": ["{{base_url}}"], "path": ["api", "card", "transactions", "5000000000000002"] }
+          }
+        },
+        {
+          "name": "Step 5 — Check Alice's Final Balance",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Balance is 400', function () {",
+                  "    pm.expect(pm.response.json().balance).to.eql(400);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/card/balance/5000000000000002", "host": ["{{base_url}}"], "path": ["api", "card", "balance", "5000000000000002"] }
+          }
+        }
+      ]
+    }
+  ]
+}
